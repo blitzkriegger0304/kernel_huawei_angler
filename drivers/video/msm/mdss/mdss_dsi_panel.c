@@ -24,6 +24,10 @@
 #include <linux/display_state.h>
 #include "mdss_dsi.h"
 
+#ifdef CONFIG_POWERSUSPEND
+#include <linux/powersuspend.h>
+#endif
+
 #define DT_CMD_HDR 6
 #define MIN_REFRESH_RATE 30
 
@@ -747,6 +751,20 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 		return -EINVAL;
 	}
 
+	#ifdef CONFIG_POWERSUSPEND
+                set_power_suspend_state_panel_hook(POWER_SUSPEND_INACTIVE);
+        #endif
+
+	display_on = true;
+
+	#ifdef CONFIG_LAZYPLUG
+		lazyplug_enter_lazy(false);
+	#endif
+
+	#ifdef CONFIG_POWERSUSPEND
+		set_power_suspend_state_panel_hook(POWER_SUSPEND_INACTIVE);
+	#endif
+
 	pinfo = &pdata->panel_info;
 	ctrl = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
@@ -765,6 +783,20 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->off_cmds);
 
 	display_on = false;
+
+#ifdef CONFIG_POWERSUSPEND
+                set_power_suspend_state_panel_hook(POWER_SUSPEND_ACTIVE);
+        #endif
+
+	display_on = false;
+
+	#ifdef CONFIG_LAZYPLUG
+		lazyplug_enter_lazy(true);
+	#endif
+
+	#ifdef CONFIG_POWERSUSPEND
+		set_power_suspend_state_panel_hook(POWER_SUSPEND_ACTIVE);
+	#endif
 
 end:
 	pinfo->blank_state = MDSS_PANEL_BLANK_BLANK;
